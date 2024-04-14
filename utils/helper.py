@@ -11,7 +11,7 @@ def parse_args()->dict:
     """ Parse command line arguments.
 
     Returns:
-        dict: The dictionary containing the different parameters for the script
+        dict: The dictionary containing the different parameters for the script.
     """  
     parser = argparse.ArgumentParser('SVC')
     parser.add_argument("-c", "--config", required=True,
@@ -26,7 +26,7 @@ def load_data(feature_path:str)->np.ndarray:
     """Loads the features of the dataset from the path provided. 
 
     Args:
-        feature_path (str): The path to the file which contains descriptions of the papers
+        feature_path (str): The path to the file which contains descriptions of the papers.
 
     Returns:
         np.ndarray: The description of the papers. The first entry in each record contains the unique string ID of the paper followed by binary values indicating whether each word in the vocabulary is present (indicated by 1) or absent (indicated by 0) in the paper. Finally, the last entry in the line contains the class label of the paper.
@@ -38,12 +38,12 @@ def load_data(feature_path:str)->np.ndarray:
 
 
 def split_data(features:np.ndarray, test_size:float=0.2, seed:int=42)-> tuple:
-    """Extracts the features and the labels of the dataset. Also splits the dataset into train and test set
+    """Extracts the features and the labels of the dataset. Also splits the dataset into train and test set.
 
     Args:
-        features (np.ndarray): The features if the dataset
+        features (np.ndarray): The features of the dataset.
         test_size (float, optional): The percentage of the entire dataset that is to be assigned as test set. Defaults to 0.2.
-        seed (int, optional): The random seed used by the train test split function for reproducibility. It controls the shuffling of teh dataset. Defaults to 42.
+        seed (int, optional): The random seed used by the train test split function for reproducibility. It controls the shuffling of the dataset. Defaults to 42.
 
     Returns:
         A tuple containing:

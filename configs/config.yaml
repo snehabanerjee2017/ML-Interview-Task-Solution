@@ -9,5 +9,3 @@ classifier:
   kernel: "rbf"
 results:
   metric: "accuracy"
-pca:
-  n_components: 512
