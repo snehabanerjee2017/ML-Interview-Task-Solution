@@ -1,0 +1,13 @@
+kfold: 10
+seed: 42
+test_size: 0.2
+path:
+  features: "dataset/cora/cora.content"
+  predictions: "predictions.tsv"
+classifier:
+  type: "SVC"
+  kernel: "rbf"
+results:
+  metric: "accuracy"
+pca:
+  n_components: 512

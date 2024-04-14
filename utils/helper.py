@@ -1,0 +1,152 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import cross_val_score, train_test_split, KFold
+from sklearn.svm import SVC
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score
+import argparse
+import yaml
+
+def parse_args()->dict:
+    """ Parse command line arguments.
+
+    Returns:
+        dict: The dictionary containing the different parameters for the script
+    """  
+    parser = argparse.ArgumentParser('SVC')
+    parser.add_argument("-c", "--config", required=True,
+                    help="The path to the YAML configuration file for the ML task")
+    
+    args = parser.parse_args()
+    config = yaml.load(open(args.config),Loader=yaml.FullLoader)
+    return config
+
+
+def load_data(feature_path:str)->np.ndarray:
+    """Loads the features of the dataset from the path provided. 
+
+    Args:
+        feature_path (str): The path to the file which contains descriptions of the papers
+
+    Returns:
+        np.ndarray: The description of the papers. The first entry in each record contains the unique string ID of the paper followed by binary values indicating whether each word in the vocabulary is present (indicated by 1) or absent (indicated by 0) in the paper. Finally, the last entry in the line contains the class label of the paper.
+    """    
+    # Load the features
+    features = np.genfromtxt(feature_path, dtype=np.dtype(str))
+
+    return features
+
+
+def split_data(features:np.ndarray, test_size:float=0.2, seed:int=42)-> tuple:
+    """Extracts the features and the labels of the dataset. Also splits the dataset into train and test set
+
+    Args:
+        features (np.ndarray): The features if the dataset
+        test_size (float, optional): The percentage of the entire dataset that is to be assigned as test set. Defaults to 0.2.
+        seed (int, optional): The random seed used by the train test split function for reproducibility. It controls the shuffling of teh dataset. Defaults to 42.
+
+    Returns:
+        A tuple containing:
+        - X_train (np.ndarray): The features of the train set.
+        - X_test (np.ndarray): The features of the test set.
+        - y_train (np.ndarray): The labels of the train set.
+        - y_test (np.ndarray): The labels of the test set.
+        - id_train (np.ndarray): The IDs of the papers in the train set.
+        - id_test (np.ndarray): The IDs of the papers in the test set.
+        - label_encoder (LabelEncoder): The label encoder used to encode the class labels.
+    """    
+    paper_ids = features[:, 0] # First column contains unique ID of paper
+    
+    X = features[:, 1:-1]  # Features are from the second column to the second last column
+    y = features[:, -1]    # Labels are in the last column
+
+    # Encode labels
+    label_encoder = LabelEncoder()
+    y_encoded = label_encoder.fit_transform(y)
+
+    X_train, X_test, y_train, y_test, id_train, id_test = train_test_split(X, y_encoded, paper_ids, test_size=test_size, random_state=seed)
+
+    return X_train, X_test, y_train, y_test, id_train, id_test, label_encoder
+
+
+def train_model(X_train: np.ndarray, y_train: np.ndarray, classifier:str, kernel:str='rbf', seed:int=42, kfold:int=10)-> SVC:
+    """Trains a machine learning model for classification task.
+
+    Args:
+        X_train (np.ndarray): The features of the train set.
+        y_train (np.ndarray): The labels of the train set.
+        classifier (str): The type of classifier that is to be used for the classification task.
+        kernel (str, optional): Specifies the kernel type used by the classification algorithm. . Defaults to 'rbf'.
+        seed (int, optional): The random seed used by the classifier and cross validation function for reproducibility. It controls the shuffling of the dataset and the randomness of each fold. Defaults to 42.
+        kfold (int, optional): Number of folds. Must be at least 2. Defaults to 10.
+
+    Raises:
+        NotImplementedError: If the specified classifier is not implemented.
+
+    Returns:
+        SVC: The trained SVC classifier. 
+    """    
+    if classifier == 'SVC':
+        clf = SVC(kernel=kernel, random_state=seed)
+    else:
+        raise NotImplementedError(f"{classifier} classifier has not been implemented yet")
+
+    kf = KFold(n_splits=kfold, shuffle=True, random_state=seed)
+
+    scores = cross_val_score(clf, X_train, y_train, cv=kf)
+    print("Cross-Validation Scores:", scores)
+    print("Mean Accuracy: {:.2f}%".format(scores.mean() * 100))
+
+    # Train the final classifier on the full training set
+    clf.fit(X_train, y_train)
+
+    return clf
+
+
+def get_predictions(clf, X:np.ndarray)-> np.ndarray:   
+    """A function to generate the predictions of the machine learning model
+
+    Args:
+        clf (Any): The classifier that is to be used for the prediction task.
+        X (np.ndarray): The samples of the dataset for which the prediction quality of the model is to be evaluated.
+
+    Returns:
+        np.ndarray: The predictions generated by the model.
+    """    
+    predictions = clf.predict(X)
+    return predictions
+
+
+def evaluate_model(predictions:np.ndarray, y:np.ndarray, evaluation_metric:str='accuracy'):
+    """A function to evaluate the predictions of the machine learning model.
+
+    Args:
+        predictions (np.ndarray): The samples of the dataset for which the prediction quality of the model is to be evaluated.
+        y (np.ndarray): The ground truth labels of those samples.
+        evaluation_metric (str, optional): The metric on which the quality of the model is to be evaluated. Defaults to 'accuracy'.
+
+    Raises:
+        NotImplementedError: If the specified evaluation metric is not implemented.
+    """    
+    if evaluation_metric == 'accuracy':
+        accuracy = accuracy_score(y, predictions)
+        print("Accuracy: {:.2f}%".format(accuracy * 100))
+    else:
+        raise NotImplementedError
+    
+
+def store_predictions(predictions:np.ndarray, path:str, paper_ids:np.ndarray, label_encoder:LabelEncoder):   
+    """ Tranforms the predictions of the model into strings and stores a´them in tab-separated csv files. 
+
+    Args:
+        predictions (np.ndarray): The predictions of the machine learning model. 
+        path (str): The path to the file where the predictions are to be stored. 
+        paper_ids (np.ndarray): The paper IDs of the samples for which the predictions are provided.
+        label_encoder (LabelEncoder): The label encoder used to encode the class labels.
+    """    
+    predicted_labels = label_encoder.inverse_transform(predictions)  # Decode predicted labels
+
+    df = pd.DataFrame({'Paper_ID': paper_ids, 'Predicted_Label': predicted_labels})
+    df.to_csv(path, sep='\t', index=False)
+
+
