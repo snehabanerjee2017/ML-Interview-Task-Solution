@@ -7,11 +7,11 @@ config = parse_args()
 print("Loading dataset...")
 features = load_data(feature_path=config['path']['features'])
 
-# Step 2: Split the dataset using 10-fold cross validation
+# Step 2: Split the dataset into train and test set
 print(f"Splitting dataset into train set and test set with test size as {config['test_size']} ...")
 X_train, X_test, y_train, y_test, id_train, id_test, label_encoder = split_data(features=features,test_size=config['test_size'],seed=config['seed'])
 
-#  Step 3: Train a machine learning model and predict the subjects of the scientific papers
+#  Step 3: Using 10 fold cross validation train a machine learning model and predict the subjects of the scientific papers
 print(f"Training the {config['classifier']['type']} Model...")
 clf = train_model(X_train=X_train, y_train=y_train,classifier= config['classifier']['type'], kernel= config['classifier']['kernel'],seed=config['seed'],kfold=config['kfold'])
 train_predictions = get_predictions(clf=clf,X=X_train)
