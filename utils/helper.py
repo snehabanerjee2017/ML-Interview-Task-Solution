@@ -136,7 +136,7 @@ def evaluate_model(predictions:np.ndarray, y:np.ndarray, evaluation_metric:str='
     
 
 def store_predictions(predictions:np.ndarray, path:str, paper_ids:np.ndarray, label_encoder:LabelEncoder):   
-    """ Tranforms the predictions of the model into strings and stores a´them in tab-separated csv files. 
+    """ Transforms the predictions of the model into strings and stores a´them in a tab-separated csv file. 
 
     Args:
         predictions (np.ndarray): The predictions of the machine learning model. 
